@@ -1,16 +1,16 @@
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from database.models import User, Doctor
-from .serializers import UserSerializer, DoctorSerializer
+from database.models import User, Doctor, Administrator
+from .serializers import UserSerializer, DoctorSerializer, AdminSerializer
 from .exceptions import *
 
 
 @api_view(["GET", "POST", "PUT", "DELETE"])
-def user(request, user_cpf=None):
+def user(request, user_email=None):
     if request.method == "GET":
-        if user_cpf is not None:
+        if user_email is not None:
             try:
-                user = User.objects.get(cpf=user_cpf)
+                user = User.objects.get(email=user_email)
 
                 if not user:
                     raise UserNotFoundException()
@@ -49,12 +49,12 @@ def user(request, user_cpf=None):
 
         return response
 
-    elif request.method == "PUT" and user_cpf is not None:
+    elif request.method == "PUT" and user_email is not None:
         try:
-            if user_cpf is None:
+            if user_email is None:
                 raise DataMissingException()
 
-            user = User.objects.get(crm=user_cpf)
+            user = User.objects.get(email=user_email)
             serializer = UserSerializer(user, data=request.data)
 
             if request.data == {}:
@@ -72,12 +72,12 @@ def user(request, user_cpf=None):
 
         return response
 
-    elif request.method == "DELETE" and user_cpf is not None:
+    elif request.method == "DELETE" and user_email is not None:
         try:
-            if user_cpf is None:
+            if user_email is None:
                 raise DataMissingException()
 
-            user = User.objects.get(cpf=user_cpf)
+            user = User.objects.get(email=user_email)
             if not user:
                 raise UserNotFoundException()
 
@@ -169,6 +169,93 @@ def doctor(request, doctor_crm=None):
 
             doctor.delete()
             response = Response({"message": "Doctor Deleted"})
+
+        except Exception as e:
+            response = Response(
+                {"message": str(e)}, e.status_code if hasattr(e, "status_code") else 500
+            )
+
+        return response
+
+
+@api_view(["GET", "POST", "PUT", "DELETE"])
+def admin(request, admin_email=None):
+    if request.method == "GET":
+        if admin_email is not None:
+            try:
+                admin = Administrator.objects.get(email=admin_email)
+
+                if not admin:
+                    raise AdminNotFoundException()
+
+                serializer = AdminSerializer(admin)
+                response = Response(serializer.data)
+
+            except Exception as e:
+                response = Response(
+                    {"message": str(e)},
+                    e.status_code if hasattr(e, "status_code") else 500,
+                )
+
+        else:
+            admins = Administrator.objects.all()
+            serializer = AdminSerializer(admins, many=True)
+            response = Response(serializer.data)
+
+        return response
+
+    elif request.method == "POST":
+        try:
+            if request.data == {}:
+                raise DataMissingException()
+
+            serializer = AdminSerializer(data=request.data)
+
+            if serializer.is_valid():
+                serializer.save()
+                response = Response(serializer.data, status=201)
+
+        except Exception as e:
+            response = Response(
+                {"message": str(e)}, e.status_code if hasattr(e, "status_code") else 500
+            )
+
+        return response
+
+    elif request.method == "PUT" and admin_email is not None:
+        try:
+            if admin_email is None:
+                raise DataMissingException()
+
+            admin = Administrator.objects.get(email=admin_email)
+            serializer = AdminSerializer(admin, data=request.data)
+
+            if request.data == {}:
+                raise DataMissingException()
+            elif not admin:
+                raise AdminNotFoundException()
+            elif serializer.is_valid():
+                serializer.save()
+                response = Response(serializer.data)
+
+        except Exception as e:
+            response = Response(
+                {"message": str(e)}, e.status_code if hasattr(e, "status_code") else 500
+            )
+
+        return response
+
+    elif request.method == "DELETE" and admin_email is not None:
+        try:
+            if admin_email is None:
+                raise DataMissingException()
+
+            admin = Administrator.objects.get(email=admin_email)
+            if not admin:
+                raise AdminNotFoundException()
+
+            admin.delete()
+            response = Response({"message": "Admin Deleted"})
 
         except Exception as e:
             response = Response(

@@ -4,9 +4,9 @@ from django.db import models
 
 
 class User(models.Model):
-    cpf = models.CharField(max_length=11, primary_key=True)
+    cpf = models.CharField(max_length=11)
     name = models.CharField(max_length=100)
-    email = models.EmailField()
+    email = models.EmailField(primary_key=True)
     address = models.CharField(max_length=100)
     neighborhood = models.CharField(max_length=100)
     house_number = models.CharField(max_length=5)

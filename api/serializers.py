@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from database.models import User, Doctor
+from database.models import User, Doctor, Administrator, Apointment
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -12,4 +12,9 @@ class DoctorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Doctor
         fields = "__all__"
-        # extra_kwargs = {"__all__": {"required": False}}
+
+
+class AdminSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Administrator
+        fields = "__all__"
