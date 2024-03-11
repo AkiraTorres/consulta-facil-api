@@ -2,6 +2,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from database.models import User, Doctor
 from .serializers import UserSerializer, DoctorSerializer
+from .exceptions import *
 
 
 @api_view(["GET", "POST", "PUT", "DELETE"])
@@ -63,12 +64,19 @@ def user(request, user_cpf=None):
 def doctor(request, doctor_crm=None):
     if request.method == "GET":
         if doctor_crm is not None:
-            doctor = Doctor.objects.get(crm=doctor_crm)
-            serializer = DoctorSerializer(doctor)
+            try:
+                doctor = Doctor.objects.get(crm=doctor_crm)
+                if not doctor:
+                    raise DoctorNotFoundException()
 
-            response = Response(serializer.data)
-            if not doctor:
-                response = Response({"message": "Doctor Not Found"}, status=404)
+                serializer = DoctorSerializer(doctor)
+                response = Response(serializer.data)
+
+            except Exception as e:
+                response = Response(
+                    {"message": str(e)},
+                    e.status_code if hasattr(e, "status_code") else 500,
+                )
 
         else:
             doctors = Doctor.objects.all()
@@ -78,40 +86,61 @@ def doctor(request, doctor_crm=None):
         return response
 
     elif request.method == "POST":
-        serializer = DoctorSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            response = Response(serializer.data, status=201)
-        else:
-            response = Response(serializer.errors, status=400)
+        try:
+            serializer = DoctorSerializer(data=request.data)
+
+            if request.data == {}:
+                raise DataMissingException()
+
+            if serializer.is_valid():
+                serializer.save()
+                response = Response(serializer.data, status=201)
+
+        except Exception as e:
+            response = Response(
+                {"message": str(e)}, e.status_code if hasattr(e, "status_code") else 500
+            )
+
         return response
 
     elif request.method == "PUT" and doctor_crm is not None:
         try:
-            response = Response({"message": "Internal Error"}, status=500)
+            if doctor_crm is None:
+                raise DataMissingException()
+
             doctor = Doctor.objects.get(crm=doctor_crm)
             serializer = DoctorSerializer(doctor, data=request.data)
 
-            if request.data is None:
-                response = Response({"message": "Data is missing"}, status=400)
+            if request.data == {}:
+                raise DataMissingException()
             elif not doctor:
-                response({"message": "Doctor Not Found"}, status=404)
+                raise DoctorNotFoundException()
             elif serializer.is_valid():
                 serializer.save()
                 response = Response(serializer.data)
+
         except Exception as e:
-            response = Response({"message": str(e)}, status=500)
+            response = Response(
+                {"message": str(e)}, e.status_code if hasattr(e, "status_code") else 500
+            )
 
         return response
 
     elif request.method == "DELETE" and doctor_crm is not None:
-        response = Response({"message": "Internal Error"}, status=500)
+        try:
+            if doctor_crm is None:
+                raise DataMissingException()
 
-        doctor = Doctor.objects.get(crm=doctor_crm)
-        if not doctor:
-            response({"message": "Doctor Not Found"}, status=404)
+            doctor = Doctor.objects.get(crm=doctor_crm)
+            if not doctor:
+                raise DoctorNotFoundException()
 
-        doctor.delete()
-        response = Response({"message": "Doctor Deleted"})
+            doctor.delete()
+            response = Response({"message": "Doctor Deleted"})
+
+        except Exception as e:
+            response = Response(
+                {"message": str(e)}, e.status_code if hasattr(e, "status_code") else 500
+            )
 
         return response
