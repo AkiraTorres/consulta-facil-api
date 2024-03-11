@@ -36,3 +36,13 @@ class Administrator(models.Model):
     token = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+
+class Apointment(models.Model):
+    id = models.AutoField(primary_key=True)
+    user_cpf = models.ForeignKey(User, on_delete=models.CASCADE)
+    doctor_crm = models.ForeignKey(Doctor, on_delete=models.CASCADE)
+    date = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    status = models.CharField(max_length=25)
