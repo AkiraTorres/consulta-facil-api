@@ -13,7 +13,7 @@ class User(models.Model):
     state = models.CharField(max_length=2, null=True)
     house_number = models.CharField(max_length=5, null=True)
     cep = models.CharField(max_length=8, null=True)
-    birth_date = models.DateTimeField(null=True)
+    birth_date = models.CharField(max_length=100, null=True)
     user_type = models.CharField(max_length=25)
     phone = models.CharField(max_length=11, null=True)
     data = models.BooleanField()
