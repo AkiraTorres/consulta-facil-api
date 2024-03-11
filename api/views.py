@@ -9,12 +9,20 @@ from .exceptions import *
 def user(request, user_cpf=None):
     if request.method == "GET":
         if user_cpf is not None:
-            user = User.objects.get(cpf=user_cpf)
-            serializer = UserSerializer(user)
+            try:
+                user = User.objects.get(cpf=user_cpf)
 
-            response = Response(serializer.data)
-            if not user:
-                response = Response({"message": "User Not Found"}, status=404)
+                if not user:
+                    raise UserNotFoundException()
+
+                serializer = UserSerializer(user)
+                response = Response(serializer.data)
+
+            except Exception as e:
+                response = Response(
+                    {"message": str(e)},
+                    e.status_code if hasattr(e, "status_code") else 500,
+                )
 
         else:
             users = User.objects.all()
@@ -24,38 +32,62 @@ def user(request, user_cpf=None):
         return response
 
     elif request.method == "POST":
-        serializer = UserSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            response = Response(serializer.data, status=201)
-        else:
-            response = Response(serializer.errors, status=400)
+        try:
+            if request.data == {}:
+                raise DataMissingException()
+
+            serializer = UserSerializer(data=request.data)
+
+            if serializer.is_valid():
+                serializer.save()
+                response = Response(serializer.data, status=201)
+
+        except Exception as e:
+            response = Response(
+                {"message": str(e)}, e.status_code if hasattr(e, "status_code") else 500
+            )
+
         return response
 
     elif request.method == "PUT" and user_cpf is not None:
-        response = Response({"message": "Internal Error"}, status=500)
-        serializer = UserSerializer(user, data=request.data)
-        user = User.objects.get(cpf=user_cpf)
+        try:
+            if user_cpf is None:
+                raise DataMissingException()
 
-        if request.data is None:
-            response = Response({"message": "Data is missing"}, status=400)
-        elif not user:
-            response({"message": "User Not Found"}, status=404)
-        elif serializer.is_valid():
-            serializer.save()
-            response = Response(serializer.data)
+            user = User.objects.get(crm=user_cpf)
+            serializer = UserSerializer(user, data=request.data)
+
+            if request.data == {}:
+                raise DataMissingException()
+            elif not user:
+                raise UserNotFoundException()
+            elif serializer.is_valid():
+                serializer.save()
+                response = Response(serializer.data)
+
+        except Exception as e:
+            response = Response(
+                {"message": str(e)}, e.status_code if hasattr(e, "status_code") else 500
+            )
 
         return response
 
     elif request.method == "DELETE" and user_cpf is not None:
-        response = Response({"message": "Internal Error"}, status=500)
+        try:
+            if user_cpf is None:
+                raise DataMissingException()
 
-        user = User.objects.get(cpf=user_cpf)
-        if not user:
-            response({"message": "User Not Found"}, status=404)
+            user = User.objects.get(cpf=user_cpf)
+            if not user:
+                raise UserNotFoundException()
 
-        user.delete()
-        response = Response({"message": "User Deleted"})
+            user.delete()
+            response = Response({"message": "User Deleted"})
+
+        except Exception as e:
+            response = Response(
+                {"message": str(e)}, e.status_code if hasattr(e, "status_code") else 500
+            )
 
         return response
 
@@ -87,10 +119,10 @@ def doctor(request, doctor_crm=None):
 
     elif request.method == "POST":
         try:
-            serializer = DoctorSerializer(data=request.data)
-
             if request.data == {}:
                 raise DataMissingException()
+
+            serializer = DoctorSerializer(data=request.data)
 
             if serializer.is_valid():
                 serializer.save()
