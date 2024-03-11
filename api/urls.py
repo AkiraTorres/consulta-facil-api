@@ -6,6 +6,7 @@ urlpatterns = [
     path("user/<str:user_email>", views.user),
     path("doctor", views.doctor),
     path("doctor/<str:doctor_crm>", views.doctor),
-    path("admin", views.admin),
-    path("admin/<str:admin_email>", views.admin),
+    path("adm", views.admin),
+    path("adm/<str:admin_email>", views.admin),
+    path("user/validate/<str:user_cpf>", views.validate_user),
 ]

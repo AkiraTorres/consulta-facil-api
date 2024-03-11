@@ -92,6 +92,26 @@ def user(request, user_email=None):
         return response
 
 
+@api_view(["GET"])
+def validate_user(request, user_cpf=None):
+    try:
+        if user_cpf is None:
+            raise DataMissingException()
+
+        user = User.objects.get(cpf=user_cpf)
+        if user:
+            response = {"message": "User already exists.", "status": 400}
+        else:
+            response = {"message": "User don't exists.", "status": 200}
+
+    except Exception as e:
+        response = Response(
+            {"message": str(e)}, e.status_code if hasattr(e, "status_code") else 500
+        )
+
+    return response
+
+
 @api_view(["GET", "POST", "PUT", "DELETE"])
 def doctor(request, doctor_crm=None):
     if request.method == "GET":
