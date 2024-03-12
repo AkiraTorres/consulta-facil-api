@@ -25,13 +25,23 @@ class User(models.Model):
 class Doctor(models.Model):
     crm = models.CharField(max_length=11, primary_key=True)
     name = models.CharField(max_length=100)
+    email = models.EmailField(default="")
     specialist = models.CharField(max_length=100)
     specialty = models.CharField(max_length=100)
     user_type = models.CharField(max_length=25)
     gender = models.CharField(max_length=5)
     description = models.TextField()
-    token = models.CharField(max_length=255)
+    token = models.CharField(max_length=255, null=True)
+    search = models.CharField(max_length=1, null=True)
     phone = models.CharField(max_length=11)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class DoctorAvailability(models.Model):
+    doctor_crm = models.ForeignKey(Doctor, on_delete=models.CASCADE)
+    date = models.CharField(max_length=100)
+    available = models.BooleanField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

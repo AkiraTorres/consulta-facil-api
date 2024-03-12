@@ -9,4 +9,5 @@ urlpatterns = [
     path("adm", views.admin),
     path("adm/<str:admin_email>", views.admin),
     path("user/validate/<str:user_cpf>", views.validate_user),
+    path("doctor/availability/<str:doctor_crm>/<str:date>", views.doctor_availability),
 ]

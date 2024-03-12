@@ -29,3 +29,9 @@ class AdminNotFoundException(APIException):
     status_code = 404
     default_detail = "Admin Not Found"
     default_code = "admin_not_found"
+
+
+class DoctorAvailabilityNotFoundException(APIException):
+    status_code = 404
+    default_detail = "Doctor Availability Not Found"
+    default_code = "doctor_availability_not_found"
