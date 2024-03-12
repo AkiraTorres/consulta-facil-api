@@ -1,20 +1,19 @@
 version: '3.9'
 
 services:
-    db:
-        container_name: 'db'
+    db-consulta:
+        container_name: 'db-consulta'
         image: postgres
         volumes:
             - storage_db:/var/lib/postgres/data
-            - ./portugues.sql:/docker-entrypoint-initdb.d/portugues.sql
         ports:
             - ${DB_PORT}:${DB_PORT}
         environment:
             POSTGRES_USER: ${DB_USER}
             POSTGRES_PASSWORD: ${DB_PASS}
             POSTGRES_DB: ${DB_NAME}
-    pgadmin:
-        container_name: pgadmin4_container
+    pgadmin-consulta:
+        container_name: pgadmin4_container-consulta
         image: dpage/pgadmin4
         restart: always
         environment:
