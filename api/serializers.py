@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from database.models import User, Doctor, Administrator, Apointment, DoctorAvailability
+from database.models import User, Doctor, Administrator, Appointment, DoctorAvailability
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -29,4 +29,10 @@ class DoctorAvailabilityByDateSerializer(serializers.ModelSerializer):
 class AdminSerializer(serializers.ModelSerializer):
     class Meta:
         model = Administrator
+        fields = "__all__"
+
+
+class AppointmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Appointment
         fields = "__all__"

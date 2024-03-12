@@ -53,11 +53,14 @@ class Administrator(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
 
-class Apointment(models.Model):
+class Appointment(models.Model):
     id = models.AutoField(primary_key=True)
     user_email = models.ForeignKey(User, on_delete=models.CASCADE)
+    user_name = models.CharField(max_length=100)
     doctor_crm = models.ForeignKey(Doctor, on_delete=models.CASCADE)
-    date = models.DateTimeField()
+    specialty = models.CharField(max_length=100)
+    specialist = models.CharField(max_length=100)
+    date = models.CharField(max_length=100)
+    status = models.CharField(max_length=25)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    status = models.CharField(max_length=25)

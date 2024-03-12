@@ -5,7 +5,7 @@ from .serializers import DoctorAvailability, DoctorAvailabilityByDateSerializer
 def select_time_by_date(serializer, given_date):
     dates = []
     for i in serializer.data:
-        if i.date[0:9] == given_date[0:9]:
+        if i.get("date")[0:9] == given_date[0:9]:
             dates.append(i)
 
     return dates
@@ -18,7 +18,7 @@ def convert_date_to_db_format(schedule, doctor):
         for available_time in day.get("available_times"):
             all.append(
                 DoctorAvailability(
-                    doctor_crm=doctor, date=f"{day.get("date")} {available_time}", available=True
+                    doctor_crm=doctor, date=f"{available_time}", available=True
                 )
             )
     return all

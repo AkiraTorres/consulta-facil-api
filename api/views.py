@@ -1,6 +1,6 @@
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from database.models import User, Doctor, Administrator, DoctorAvailability
+from database.models import *
 from .serializers import *
 from .exceptions import *
 from .tools import *
@@ -285,7 +285,9 @@ def doctor_availability(request, doctor_crm=None, date=None):
 
             converted = convert_date_to_db_format(request.data, doctor)
 
-            DoctorAvailability.objects.bulk_create(converted)
+            for d in converted:
+                d.save()
+
             response = Response(request.data, status=201)
 
         except Exception as e:
@@ -310,8 +312,7 @@ def doctor_availability(request, doctor_crm=None, date=None):
             doctor_availability = DoctorAvailability.objects.filter(
                 doctor_crm=doctor_crm, date__in=alter_dates
             )
-            # if not doctor_availability:
-            #     raise DoctorAvailabilityNotFoundException()
+
             doctor_availability.delete()
 
             converted = convert_date_to_db_format(request.data, doctor)
@@ -430,3 +431,288 @@ def admin(request, admin_email=None):
             )
 
         return response
+
+
+@api_view(["GET"])
+def get_all_specialties(request):
+    try:
+        specialties = Doctor.objects.values("specialty").distinct()
+        response = Response(specialties)
+
+    except Exception as e:
+        response = Response(
+            {"message": str(e)}, e.status_code if hasattr(e, "status_code") else 500
+        )
+
+    return response
+
+
+@api_view(["GET"])
+def get_all_specialists_by_specialty(request, specialty=None):
+    try:
+        if specialty is None:
+            raise DataMissingException()
+
+        specialists = Doctor.objects.filter(specialty=specialty)
+        if not specialists:
+            raise DoctorNotFoundException()
+
+        serializer = DoctorSerializer(specialists, many=True)
+        response = Response(serializer.data)
+
+    except Exception as e:
+        response = Response(
+            {"message": str(e)}, e.status_code if hasattr(e, "status_code") else 500
+        )
+
+    return response
+
+
+@api_view(["GET"])
+def get_available_days_by_doctor(request, doctor_crm=None):
+    if request.method == "GET":
+        try:
+            if doctor_crm is None:
+                raise DataMissingException()
+
+            doctor = Doctor.objects.get(crm=doctor_crm)
+            if doctor is None:
+                raise DoctorNotFoundException()
+
+            doctor_availability = DoctorAvailability.objects.filter(
+                doctor_crm=doctor, available=True
+            )
+            if not doctor_availability:
+                raise DoctorAvailabilityNotFoundException()
+
+            days = []
+            for day in doctor_availability:
+                days.append(day.date[0:10])
+            unique_days = list(set(days))
+
+            # serializer = DoctorAvailabilityByDateSerializer(doctor_availability, many=True)
+            response = Response(unique_days)
+
+        except Exception as e:
+            response = Response(
+                {"message": str(e)}, e.status_code if hasattr(e, "status_code") else 500
+            )
+
+        return response
+
+
+@api_view(["GET"])
+def get_available_times_by_doctor(request, doctor_crm=None, date=None):
+    try:
+        if doctor_crm is None or date is None:
+            raise DataMissingException()
+
+        doctor = Doctor.objects.get(crm=doctor_crm)
+        if doctor is None:
+            raise DoctorNotFoundException()
+
+        doctor_availability = DoctorAvailability.objects.filter(
+            doctor_crm=doctor, date__startswith=date, available=True
+        )
+        if not doctor_availability:
+            raise DoctorAvailabilityNotFoundException()
+
+        serializer = DoctorAvailabilitySerializer(doctor_availability, many=True)
+
+        times = select_time_by_date(serializer, date)
+        response = Response(times)
+
+    except Exception as e:
+        response = Response(
+            {"message": str(e)}, e.status_code if hasattr(e, "status_code") else 500
+        )
+
+    return response
+
+
+@api_view(["GET", "POST", "PUT", "DELETE"])
+def appointment(request, id=None):
+    if request.method == "GET":
+        if id is not None:
+            try:
+                consult = Appointment.objects.get(id=id)
+                if not consult:
+                    raise AppointmentNotFoundException()
+
+                serializer = AppointmentSerializer(consult)
+                response = Response(serializer.data)
+
+            except Exception as e:
+                response = Response(
+                    {"message": str(e)},
+                    e.status_code if hasattr(e, "status_code") else 500,
+                )
+
+        else:
+            appointments = Appointment.objects.all()
+            serializer = AppointmentSerializer(appointments, many=True)
+            response = Response(serializer.data)
+
+        return response
+
+    elif request.method == "POST":
+        try:
+            if request.data == {}:
+                raise DataMissingException()
+
+            serializer = AppointmentSerializer(data=request.data)
+
+            if serializer.is_valid():
+                serializer.save()
+                response = Response(serializer.data, status=201)
+
+        except Exception as e:
+            response = Response(
+                {"message": str(e)}, e.status_code if hasattr(e, "status_code") else 500
+            )
+
+        return response
+
+    elif request.method == "DELETE":
+        try:
+            consult = Appointment.objects.get(id=id)
+            if not consult:
+                raise AppointmentNotFoundException()
+
+            consult.delete()
+            response = Response({"message": "Appointment Deleted"})
+
+        except Exception as e:
+            response = Response(
+                {"message": str(e)}, e.status_code if hasattr(e, "status_code") else 500
+            )
+
+        return response
+
+
+@api_view(["GET"])
+def get_appointments_by_user_email(request, user_email):
+    try:
+        consult = Appointment.objects.filter(user_email=user_email)
+        if not consult:
+            raise AppointmentNotFoundException()
+
+        serializer = AppointmentSerializer(consult, many=True)
+        response = Response(serializer.data)
+
+    except Exception as e:
+        response = Response(
+            {"message": str(e)}, e.status_code if hasattr(e, "status_code") else 500
+        )
+
+    return response
+
+
+@api_view(["GET"])
+def get_appointments_by_doctor_crm(request, doctor_crm):
+    try:
+        consult = Appointment.objects.filter(doctor_crm=doctor_crm)
+        if not consult:
+            raise AppointmentNotFoundException()
+
+        serializer = AppointmentSerializer(consult, many=True)
+        response = Response(serializer.data)
+
+    except Exception as e:
+        response = Response(
+            {"message": str(e)}, e.status_code if hasattr(e, "status_code") else 500
+        )
+
+    return response
+
+
+@api_view(["GET"])
+def get_appointments_by_crm_and_date(request, doctor_crm, date):
+    try:
+        consult = Appointment.objects.filter(
+            doctor_crm=doctor_crm, date__startswith=date
+        )
+        if not consult:
+            raise AppointmentNotFoundException()
+
+        serializer = AppointmentSerializer(consult, many=True)
+        response = Response(serializer.data)
+
+    except Exception as e:
+        response = Response(
+            {"message": str(e)}, e.status_code if hasattr(e, "status_code") else 500
+        )
+
+    return response
+
+
+@api_view(["GET"])
+def mark_doctor_availability_as_unavailable(request, doctor_crm, date):
+    try:
+        doctor = Doctor.objects.get(crm=doctor_crm)
+        if doctor is None:
+            raise DoctorNotFoundException()
+
+        doctor_availability = DoctorAvailability.objects.filter(
+            doctor_crm=doctor, date__startswith=date
+        )
+        if not doctor_availability:
+            raise DoctorAvailabilityNotFoundException()
+
+        for d in doctor_availability:
+            d.available = False
+            d.save()
+
+        response = Response({"message": "Doctor Availability Updated"})
+
+    except Exception as e:
+        response = Response(
+            {"message": str(e)}, e.status_code if hasattr(e, "status_code") else 500
+        )
+
+    return response
+
+
+@api_view(["GET"])
+def mark_doctor_availability_as_unavailable(request, doctor_crm, date):
+    try:
+        doctor = Doctor.objects.get(crm=doctor_crm)
+        if doctor is None:
+            raise DoctorNotFoundException()
+
+        doctor_availability = DoctorAvailability.objects.filter(
+            doctor_crm=doctor, date__startswith=date
+        )
+        if not doctor_availability:
+            raise DoctorAvailabilityNotFoundException()
+
+        for d in doctor_availability:
+            d.available = True
+            d.save()
+
+        response = Response({"message": "Doctor Availability Updated"})
+
+    except Exception as e:
+        response = Response(
+            {"message": str(e)}, e.status_code if hasattr(e, "status_code") else 500
+        )
+
+    return response
+
+
+@api_view(["GET"])
+def get_doctor_by_email(request, doctor_email):
+    try:
+        doctor = Doctor.objects.get(email=doctor_email)
+        if doctor is None:
+            raise DoctorNotFoundException()
+
+        serializer = DoctorSerializer(doctor)
+        response = Response(serializer.data)
+
+    except Exception as e:
+        response = Response(
+            {"message": str(e)}, e.status_code if hasattr(e, "status_code") else 500
+        )
+
+    return response

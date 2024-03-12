@@ -35,3 +35,9 @@ class DoctorAvailabilityNotFoundException(APIException):
     status_code = 404
     default_detail = "Doctor Availability Not Found"
     default_code = "doctor_availability_not_found"
+
+
+class AppointmentNotFoundException(APIException):
+    status_code = 404
+    default_detail = "Appointment Not Found"
+    default_code = "appointment_not_found"
